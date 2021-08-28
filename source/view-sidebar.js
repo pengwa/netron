@@ -126,9 +126,10 @@ sidebar.Sidebar = class {
 
 sidebar.NodeSidebar = class {
 
-    constructor(host, node) {
+    constructor(host, node, graphElement) {
         this._host = host;
         this._node = node;
+        this._graphElement = graphElement;
         this._elements = [];
         this._attributes = [];
         this._inputs = [];
@@ -229,12 +230,15 @@ sidebar.NodeSidebar = class {
 
     _addInput(name, input) {
         if (input.arguments.length > 0) {
-            const view = new sidebar.ParameterView(this._host, input);
+            const view = new sidebar.ParameterView(this._host, input, this._graphElement);
             view.on('export-tensor', (sender, tensor) => {
                 this._raise('export-tensor', tensor);
             });
             view.on('error', (sender, tensor) => {
                 this._raise('error', tensor);
+            });
+            view.on('select', (sender, selection) => {
+                this._raise('select', selection);
             });
             const item = new sidebar.NameValueView(this._host, name, view);
             this._inputs.push(item);
@@ -244,7 +248,11 @@ sidebar.NodeSidebar = class {
 
     _addOutput(name, output) {
         if (output.arguments.length > 0) {
-            const item = new sidebar.NameValueView(this._host, name, new sidebar.ParameterView(this._host, output));
+            const v = new sidebar.ParameterView(this._host, output, this._graphElement);
+            v.on('select', (sender, selection) => {
+                this._raise('select', selection);
+            });
+            const item = new sidebar.NameValueView(this._host, name, v);
             this._outputs.push(item);
             this._elements.push(item.render());
         }
@@ -602,17 +610,21 @@ class NodeAttributeView {
 
 sidebar.ParameterView = class {
 
-    constructor(host, list) {
+    constructor(host, list, graphElement) {
         this._list = list;
+        this._graphElement = graphElement;
         this._elements = [];
         this._items = [];
         for (const argument of list.arguments) {
-            const item = new sidebar.ArgumentView(host, argument);
+            const item = new sidebar.ArgumentView(host, argument, this._graphElement);
             item.on('export-tensor', (sender, tensor) => {
                 this._raise('export-tensor', tensor);
             });
             item.on('error', (sender, tensor) => {
                 this._raise('error', tensor);
+            });
+            item.on('select', (sender, selection) => {
+                this._raise('select', selection);
             });
             this._items.push(item);
             this._elements.push(item.render());
@@ -646,9 +658,10 @@ sidebar.ParameterView = class {
 
 sidebar.ArgumentView = class {
 
-    constructor(host, argument) {
+    constructor(host, argument, graphElement) {
         this._host = host;
         this._argument = argument;
+        this._graphElement = graphElement;
 
         this._element = this._host.document.createElement('div');
         this._element.className = 'sidebar-view-item-value';
@@ -661,6 +674,21 @@ sidebar.ArgumentView = class {
         const quantization = argument.quantization;
         const type = argument.type;
         const location = this._argument.location !== undefined;
+
+        this._goto = this._host.document.createElement('div');
+        this._goto.className = 'sidebar-view-item-value-goto';
+        this._goto.innerText = '>';
+        this._goto.addEventListener('click', () => {
+            console.log("clicked > buttong of " + this._argument.name);
+            if (!this._argument.initializer) {
+                this.goto('edge-' + this._argument.name);
+            } else {
+                this.goto('initializer-' + this._argument.name);
+            }
+
+        });
+        this._element.appendChild(this._goto);
+
         if (type || initializer || quantization || location) {
             this._expander = this._host.document.createElement('div');
             this._expander.className = 'sidebar-view-item-value-expander';
@@ -699,6 +727,52 @@ sidebar.ArgumentView = class {
             this._element.appendChild(typeLine);
         }
     }
+
+    goto(item_id) {
+        // const inputItem = this._host.document.createElement('li');
+        // inputItem.innerText = '\u2192 ' + 'goto inner text'; // custom argument id
+        // inputItem.id = item_id;
+        this.select_internal(item_id);
+    }
+
+    select_internal(id) {
+        const selection = [];
+        // const id = e.target.id;
+
+        const nodesElement = this._graphElement.getElementById('nodes');
+        let nodeElement = nodesElement.firstChild;
+        while (nodeElement) {
+            if (nodeElement.id == id) {
+                selection.push(nodeElement);
+            }
+            nodeElement = nodeElement.nextSibling;
+        }
+
+        const edgePathsElement = this._graphElement.getElementById('edge-paths');
+        let edgePathElement = edgePathsElement.firstChild;
+        while (edgePathElement) {
+            if (edgePathElement.id == id) {
+                selection.push(edgePathElement);
+            }
+            edgePathElement = edgePathElement.nextSibling;
+        }
+
+        let initializerElement = this._graphElement.getElementById(id);
+        if (initializerElement) {
+            while (initializerElement.parentElement) {
+                initializerElement = initializerElement.parentElement;
+                if (initializerElement.id && initializerElement.id.startsWith('node-')) {
+                    selection.push(initializerElement);
+                    break;
+                }
+            }
+        }
+
+        if (selection.length > 0) {
+            this._raise('select', selection);
+        }
+    }
+
 
     render() {
         return this._element;
@@ -788,7 +862,7 @@ sidebar.ArgumentView = class {
             }
             else {
                 this._expander.innerText = '+';
-                while (this._element.childElementCount > 2) {
+                while (this._element.childElementCount > 3) {
                     this._element.removeChild(this._element.lastChild);
                 }
             }

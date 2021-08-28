@@ -37,6 +37,8 @@
 .node-item-type-data path { fill: rgb(85, 85, 85); }
 .node-item-type-custom path { fill: rgb(128, 128, 128); }
 
+.active_node { fill: orange !important; outline: 1px dotted white !important}
+
 .node-item-input path { fill: #fff; }
 .node-item-input:hover { cursor: pointer; }
 .node-item-input:hover path { fill: #fff; }

@@ -919,12 +919,17 @@ view.View = class {
 
     showNodeProperties(node, input) {
         if (node) {
-            const nodeSidebar = new sidebar.NodeSidebar(this._host, node);
+            const graphElement = this._getElementById('canvas');
+            const nodeSidebar = new sidebar.NodeSidebar(this._host, node, graphElement);
             nodeSidebar.on('show-documentation', (/* sender, e */) => {
                 this.showDocumentation(node.type);
             });
             nodeSidebar.on('show-graph', (sender, graph) => {
                 this.pushGraph(graph);
+            });
+            nodeSidebar.on('select', (sender, selection) => {
+                // this._sidebar.close();
+                this.select(selection);
             });
             nodeSidebar.on('export-tensor', (sender, tensor) => {
                 this._host.require('./numpy').then((numpy) => {
@@ -1049,6 +1054,10 @@ view.Node = class extends grapher.Node {
         return 'graph-node';
     }
 
+    _getElementsByClassName(class_name) {
+        return Array.from(this.context.view._host.document.getElementsByClassName(class_name)|| []);
+    }
+
     _add(node) {
 
         const header =  this.header();
@@ -1064,7 +1073,14 @@ view.Node = class extends grapher.Node {
         }
         const content = this.context.view.showNames && (node.name || node.location) ? (node.name || node.location) : type.name.split('.').pop();
         const tooltip = this.context.view.showNames && (node.name || node.location) ? type.name : (node.name || node.location);
-        header.add(null, styles, content, tooltip, () => {
+        header.add(null, styles, content, tooltip, (e) => {
+            const elements = this._getElementsByClassName("active_node");
+            if (elements && elements.length > 0) {
+                for (const element of elements) {
+                    element.classList.remove("active_node");
+                }
+            }
+            e.target.classList.add("active_node");
             this.context.view.showNodeProperties(node, null);
         });
         if (node.type.nodes) {
