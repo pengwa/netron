@@ -296,12 +296,13 @@ grapher.Node.Header = class {
         this._items = [];
     }
 
-    add(id, classList, content, tooltip, handler) {
+    add(id, classList, content, tooltip, backgroundColor, handler) {
         this._items.push({
             id: id,
             classList: classList,
             content: content,
             tooltip: tooltip,
+            backgroundColor: backgroundColor,
             handler: handler
         });
     }
@@ -332,6 +333,10 @@ grapher.Node.Header = class {
             }
             if (item.handler) {
                 element.addEventListener('click', item.handler);
+            }
+            if (item.backgroundColor) {
+                pathElement.style.fill = item.backgroundColor;
+                textElement.style.fill = "rgb(0, 0, 0)";
             }
             if (item.tooltip) {
                 const titleElement = this.createElement('title');

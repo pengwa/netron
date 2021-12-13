@@ -1,6 +1,6 @@
 {
     "name": "netron",
-    "productName": "Netron",
+    "productName": "Netron (ONNX)",
     "author": {
         "name": "Lutz Roeder",
         "email": "lutzroeder@users.noreply.github.com",
@@ -18,13 +18,16 @@
     },
     "dependencies": {
         "dagre": "0.8.5",
-        "electron-updater": "4.3.9"
+        "electron-packager": "^15.3.0",
+        "electron-updater": "4.3.9",
+        "fs": "^0.0.1-security",
+        "fs-js": "^1.0.6"
     },
     "devDependencies": {
-        "electron": "13.2.2",
-        "electron-builder": "22.11.7",
+        "@xmldom/xmldom": "0.7.2",
+        "electron": "^13.2.2",
+        "electron-builder": "^22.11.7",
         "electron-notarize": "1.1.0",
-        "eslint": "7.32.0",
-        "@xmldom/xmldom": "0.7.2"
+        "eslint": "7.32.0"
     }
 }
